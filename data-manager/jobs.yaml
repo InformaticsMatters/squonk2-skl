@@ -25,6 +25,7 @@ jobs:
       project-directory: /data
       working-directory: /data
       fix-permissions: true
+      memory: 2Gi
     command: >-
       python /code/hyperparams.py
       --infile '{{ inputFile }}'
