@@ -8,31 +8,59 @@ authors = [
 ]
 readme = "README.md"
 
+# What the Job actually needs. 'hyperparams.py' is the only module any Job
+# Definition invokes; it reaches numpy, scikit-learn and - through
+# helpers/utils.py - pandas, scipy and dm_job_utilities. Nothing else.
+#
+# scipy is declared here for the first time although helpers/utils.py has
+# always imported it ('from scipy.stats import spearmanr'). It arrived only as
+# a transitive dependency of scikit-learn, which is not a guarantee.
 [tool.poetry.dependencies]
-python = ">=3.11,<3.12"
-rdkit = "^2023.9.6"
-scikit-learn = "^1.2"
-pandas = "^2"
-numpy = "^1"
-torch = "^2"
-torchvision = "^0.18"
-torchaudio = "^2"
-PyTDC = "^0.3"
-skl2onnx = "^1.16"
-onnxruntime = "^1.18"
-im-standardize-molecule = ">=0.1.0"
+python = "^3.12"
 im-data-manager-job-utilities = ">=1.4.0"
-jaqpotpy = "^6.0"
-scikit-mol = "^0.3"
+numpy = "^2"
+pandas = "^2"
+scipy = "^1.11"
+scikit-learn = "^1.2"
 setuptools = "^80"
 
+# The jaqpot/torch stack, which no Job reaches. Its only consumer is
+# src/helpers/cross_train.py, which nothing imports, plus a block of imports in
+# helpers/utils.py that was commented out in 4652b3f ("disabled some jaqpot
+# stuff because it stopped working").
+#
+# Keeping it installed cost the published image 6.12 GB - most of it the CUDA
+# build of torch - and pinned the whole project to Python 3.11.
+#
+# torchvision and torchaudio used to be direct dependencies too. Nothing in
+# src has ever imported either, so they are gone. PyTDC is gone rather than
+# optional, because it cannot be installed here at all: 0.3.9 requires
+# rdkit-pypi 2022.9.5, whose last wheel is cp311 and which publishes no sdist,
+# and 1.x pins numpy < 2. src/helpers/get_data.py is the only TDC-shaped code
+# left and it imports nothing, so it still loads; re-add PyTDC if that work
+# resumes, on a Python and a numpy it supports.
+#
+# Install with: poetry install --no-root --with research
+[tool.poetry.group.research]
+optional = true
+
+[tool.poetry.group.research.dependencies]
+jaqpotpy = "^6.0"
+# jaqpotpy only asks for 'torch >= 2.0.0', which resolves to 2.3.1 - a build
+# compiled against numpy 1.x that warns 'A module that was compiled using
+# NumPy 1.x cannot be run in NumPy 2.x' on import here. The floor keeps the
+# group on a numpy-2 build.
+torch = ">=2.6"
+
 [tool.poetry.group.dev.dependencies]
-im-jote = "^0.11"
+# A caret on a 0.x version stops at the next minor - '^0.11' means
+# '>=0.11,<0.12' - which held jote three minor releases back. Use a floor.
+im-jote = ">=0.14.0"
 pre-commit = "^3"
-pylint = "^3"
-isort = "^5.13"
-black = "^24"
-mypy = "^1.11"
+pylint = "^4"
+isort = "^7"
+black = "^25"
+mypy = "^1"
 
 
 [build-system]
