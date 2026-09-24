@@ -15,10 +15,10 @@ on:
         required: false
 
 jobs:
-  build-skl:
+  build-hyperparameters:
     uses: ./.github/workflows/build-image-with-push-option.yaml
     secrets: inherit
     with:
-      image-name: squonk2-skl
+      image-name: squonk2-hyperparameters
       image-tag: ${{ inputs.image-tag }}
       image-push: ${{ inputs.image-push }}

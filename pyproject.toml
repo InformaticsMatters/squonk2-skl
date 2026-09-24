@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "squonk2-skl"
-version = "0.1.0"
-description = ""
+version = "1.1.0"
+description = "Hyperparameter optimisation for scikit-learn models"
 authors = [
   "Tim Dudgeon <tdudgeon@informaticsmatters.com>",
   "Kalev Takkis <ktakkis@informaticsmatters.com>",
