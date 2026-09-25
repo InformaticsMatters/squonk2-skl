@@ -2,26 +2,30 @@
 kind: DataManagerJobDefinition
 kind-version: '2021.1'
 
-name: Hyperparameter optimizer for SciPy RandomForestRegressor models
+name: Hyperparameter optimiser for scikit-learn RandomForestRegressor models
 collection: im-hyperparameters
 
 jobs:
 
   hyperparameters:
-    name: Random forest hyerparameters
+    name: Random forest hyperparameters
     description: >-
       Optimises hyperparameters for random forest model type using grid search algorithm
-    version: '1.0.0'
+    version: '1.1.0'
     category: hyperparameters
+    doc-url: im-hyperparameters/hyperparameters.md
     keywords:
     - random forest
     - grid search
     - hyperparameters
     image:
-      # name: informaticsmatters/squonk2-hyperparameters
-      name: kaliif/squonk2-hyperparameters
-      # tag: '1.0.2'
-      tag: latest
+      name: informaticsmatters/squonk2-hyperparameters
+      # An immutable tag, not 'latest'. The Data Manager re-pulls 'latest' and
+      # 'stable' on every run and caches everything else per node, so a static
+      # tag is what makes a Job reproducible - and it must never be reused.
+      # Bump this and 'version' together. See docs/versioning.md in the
+      # squonk2-jobs umbrella repository.
+      tag: '1.1.0'
       project-directory: /data
       working-directory: /data
       fix-permissions: true
@@ -391,6 +395,13 @@ jobs:
           outputFile: best_model.jmodel
           bootstrap: True,False
           ccp_alpha: 0.0,0.1,0.5
+          # Six parameter combinations over 900 rows x 742 descriptors, with
+          # the estimator's default of 100 trees, is a ten-minute fit - which
+          # is jote's default test timeout, and which this test exceeded on a
+          # GitHub runner. Ten trees exercises the same path in a fraction of
+          # the time. The grid itself is unchanged, so the search is still
+          # searching; only each fit is cheaper.
+          n_estimators: 10
           readHeader: true
         checks:
           exitCode: 0

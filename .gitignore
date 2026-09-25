@@ -1,16 +1,3 @@
 .idea
-.vscode/
-
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
-
-
-# macOS stuff
-**/.DS_Store
-
-# temp files
-*~
-\#*#
-\#*
+__pycache__
+.venv
