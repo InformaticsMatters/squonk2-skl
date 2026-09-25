@@ -5,7 +5,6 @@ from collections import OrderedDict
 
 import pandas as pd
 from dm_job_utilities.dm_log import DmLog
-from dm_job_utilities.utils import log, read_delimiter, write_row
 from scipy.stats import spearmanr
 from sklearn.metrics import (
     accuracy_score,
@@ -169,14 +168,6 @@ def create_doa(s_doa):
 #         return results
 
 
-
-
-
-
-
-
-
-
 def validate_args(id_column, mol_column, y_column):
     if id_column == mol_column:
         DmLog.emit_event("ERROR: mol_column and id_column must be different")
@@ -206,7 +197,6 @@ def create_core_columns(df, id_column, mol_column, y_column):
 
     core_cols.sort(key=lambda x: x[1])
     return core_cols
-
 
 
 def create_scorers(scoring_function_names):

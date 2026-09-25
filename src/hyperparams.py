@@ -7,6 +7,7 @@ import warnings
 from pathlib import Path
 
 import numpy as np
+from dm_job_utilities.utils import read_delimiter
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.exceptions import FitFailedWarning
 from sklearn.model_selection import GridSearchCV
@@ -20,7 +21,7 @@ from arrayinput import (
     NumberArray,
     UniqueArray,
 )
-from helpers.utils import read_csv, read_delimiter
+from helpers.utils import read_csv
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
