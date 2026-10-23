@@ -39,9 +39,13 @@ jobs:
         # downgrades them underneath it. That breaks poetry mid-install:
         # 'FileNotFoundError: .../python_discovery/_py_info_collect.py'.
         # Hence 'poetry run' on the steps below.
-        poetry install --only dev --no-root --no-directory
+        #
+        # The main group comes too, as the unit tests import the Job's code.
+        poetry install --with dev --no-root --no-directory
     - name: Pre-commit
       run: poetry run pre-commit run --all-files
+    - name: Unit tests
+      run: poetry run pytest
     - name: Build the image under test
       run: |
         # Tagged with the image name the Job Definition uses, so that

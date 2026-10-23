@@ -198,7 +198,11 @@ def run(
             param_grid[k] = param
             logger.info("%s param %s: %s", model_class, k, param)
 
-    search = GridSearchCV(model, param_grid=param_grid, **search_params)
+    # GridSearchCV fits clones, so 'model' itself is never tuned. Let the
+    # search refit the best parameters and take best_estimator_ from it.
+    search = GridSearchCV(
+        model, param_grid=param_grid, refit=refit_models, **search_params
+    )
     t0 = time.time()
 
     result = None
@@ -231,17 +235,12 @@ def run(
         with open(f"{filename}.json", "w", encoding="utf-8") as f:
             json.dump(selected, f, indent=4)
 
-        # defaults to true atm
+        # defaults to true atm. Only the best model is saved
         if refit_models:
-            logger.info("Refitting best %s models", n_top)
-            # for params in selected:
-            for _ in selected:
-                reg = model.fit(X, y)
-                # fitted_filename = f'{filename}_model_{params["rank"]}.jmodel'
-                # allowing only one atm
-                fitted_filename = f"{filename}.jmodel"
-                logger.info("Saving %s", fitted_filename)
-                pickle.dump(reg, open(fitted_filename, "wb"))
+            fitted_filename = f"{filename}.jmodel"
+            logger.info("Saving best model to %s", fitted_filename)
+            with open(fitted_filename, "wb") as f:
+                pickle.dump(result.best_estimator_, f)
 
     else:
         logger.info("No results to report")
@@ -639,9 +638,6 @@ def main():
     search_params = {
         "scoring": args.scoring,
         "n_jobs": args.n_jobs_search,
-        # setting this explicitly false for now. Only parameter values
-        # are returned, not the fitted model
-        "refit": False,
         "cv": args.cv,
         "verbose": args.verbose_search,
         # another unorthodox use of arrayinput, always one element, just need the parsing
