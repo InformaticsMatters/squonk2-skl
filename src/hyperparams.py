@@ -151,10 +151,10 @@ def select_results(results, n_top: int = 5) -> list[dict]:
 
 def run(
     infile,
-    outfile,
+    outbase,
     delimiter=",",
-    id_column=1,
-    mol_column=0,
+    id_column=0,
+    mol_column=1,
     y_column=2,
     read_header=False,
     n_top=5,
@@ -229,15 +229,15 @@ def run(
     if result:
         selected = select_results(result.cv_results_, n_top=n_top)
 
-        # strip off extension
-        filename = Path(outfile).stem
+        # both outputs go beside each other, under the given base name
+        Path(outbase).parent.mkdir(parents=True, exist_ok=True)
 
-        with open(f"{filename}.json", "w", encoding="utf-8") as f:
+        with open(f"{outbase}.json", "w", encoding="utf-8") as f:
             json.dump(selected, f, indent=4)
 
-        # defaults to true atm. Only the best model is saved
+        # Only the best model is saved
         if refit_models:
-            fitted_filename = f"{filename}.jmodel"
+            fitted_filename = f"{outbase}.jmodel"
             logger.info("Saving best model to %s", fitted_filename)
             with open(fitted_filename, "wb") as f:
                 pickle.dump(result.best_estimator_, f)
@@ -250,7 +250,7 @@ def main():
     # Example:
     # python src/hyperparams.py
     #     --read-header\
-    #     --outfile=outfile.json\
+    #     --output-base=best_model\
     #     --infile=data/caco2_mordred_filtered_scaled.smi\
     #     --bootstrap=True,False\
     #     --ccp_alpha=0.0,0.1,0.5
@@ -258,18 +258,26 @@ def main():
     parser = argparse.ArgumentParser(description="Prepare data")
 
     parser.add_argument("--infile", required=True, help="Input training set file")
-    parser.add_argument("-o", "--outfile", help="Output file")
+    parser.add_argument(
+        "-o",
+        "--output-base",
+        default="best_model",
+        help=(
+            "Base name for the outputs: <base>.json for the search results"
+            + " and <base>.jmodel for the fitted best model"
+        ),
+    )
 
     parser.add_argument(
         "-d", "--delimiter", default="comma", help="Delimiter when using SMILES"
     )
     parser.add_argument(
-        "--id-column", type=int, default=1, help="Column index for molecule ID"
+        "--id-column", type=int, default=0, help="Column index for molecule ID"
     )
     parser.add_argument(
         "--mol-column",
         type=int,
-        default=0,
+        default=1,
         help="Column index for molecule when using .smi",
     )
     parser.add_argument(
@@ -290,12 +298,11 @@ def main():
         default=1,
         help="Report top n results in output file",
     )
-    # not defined in jobfile atm, always fit the models
     parser.add_argument(
         "--refit_best_models",
-        action="store_true",
+        action=argparse.BooleanOptionalAction,
         default=True,
-        help="Include fitted models in output.",
+        help="Refit the best parameters on all the data and save the model.",
     )
 
     # RFR params
@@ -654,7 +661,7 @@ def main():
 
     run(
         args.infile,
-        args.outfile,
+        args.output_base,
         delimiter=delimiter,
         n_top=args.n_top_results,
         id_column=args.id_column,

@@ -10,9 +10,9 @@ A `.smi` or `.csv` file with one molecule per row: an ID column, a molecule
 The remaining columns are taken as the descriptors to train on, so the file is
 normally the output of a descriptor Job such as `mordred-descriptor-generator`.
 
-Column positions are given as zero-based indices - `idColumn`, `molColumn` and
-`yColumn` - and all three must differ. Set `readHeader` if the first line names
-the fields.
+Column positions are given as zero-based indices - `idColumn` (default 0),
+`molColumn` (default 1) and `yColumn` (default 2) - and all three must differ.
+Set `readHeader` if the first line names the fields.
 
 ## Options
 
@@ -32,15 +32,14 @@ passed through to [`GridSearchCV`].
 
 ## Output
 
-Two files:
+Two files, named from `outputBaseName` (`best_model` by default), which may
+include a subdirectory:
 
-- the best fitted model, pickled, at `outputFile` (`best_model.jmodel` by
-  default)
-- a JSON summary named from that file's stem - `best_model.json` - giving each
-  reported model's rank, its mean and standard deviation of test score across
-  the cross-validation folds, and the full parameter set that produced it.
-  Note that it is written to the working directory rather than beside
-  `outputFile`, so the two part company if `outputFile` names a subdirectory.
+- `<outputBaseName>.json` - the search results: for each of the top
+  `nTopResults` parameter sets, its rank, its mean and standard deviation of
+  test score across the cross-validation folds, and the full parameter set.
+- `<outputBaseName>.jmodel` - the best parameter set, refitted on all the data
+  and pickled. Not written when `refitBestModels` is false.
 
 [grid search]: https://scikit-learn.org/stable/modules/grid_search.html
 [`GridSearchCV`]: https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html
