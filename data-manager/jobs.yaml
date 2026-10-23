@@ -11,7 +11,7 @@ jobs:
     name: Random forest hyperparameters
     description: >-
       Optimises hyperparameters for random forest model type using grid search algorithm
-    version: '1.1.0'
+    version: '2.0.0'
     category: hyperparameters
     doc-url: im-hyperparameters/hyperparameters.md
     keywords:
@@ -25,7 +25,7 @@ jobs:
       # tag is what makes a Job reproducible - and it must never be reused.
       # Bump this and 'version' together. See docs/versioning.md in the
       # squonk2-jobs umbrella repository.
-      tag: '1.1.0'
+      tag: '2.0.0'
       project-directory: /data
       working-directory: /data
       fix-permissions: true
@@ -33,18 +33,17 @@ jobs:
     command: >-
       python /code/hyperparams.py
       --infile '{{ inputFile }}'
-      --outfile '{{ outputFile }}'
+      --output-base '{{ outputBaseName }}'
       {% if readHeader is defined and readHeader %}--read-header{% endif %}
       {% if delimiter is defined %}--delimiter {{ delimiter }}{% endif %}
       {% if idColumn is defined %}--id-column {{ idColumn }}{% endif %}
       {% if molColumn is defined %}--mol-column {{ molColumn }}{% endif %}
       {% if yColumn is defined %}--y-column {{ yColumn }}{% endif %}
       {% if nTopResults is defined %}--n_top_results {{ nTopResults }}{% endif %}
-      {% if refitBestModels is defined and refitBestModels %}--refit_best_models{% endif %}
+      {% if refitBestModels is defined and not refitBestModels %}--no-refit_best_models{% endif %}
       {% if bootstrap is defined %}--bootstrap {{ bootstrap }}{% endif %}
       {% if ccp_alpha is defined %}--ccp_alpha {{ ccp_alpha }}{% endif %}
       {% if criterion is defined %}--criterion {{ criterion }}{% endif %}
-      {% if max_features is defined %}--max_features {{ max_features }}{% endif %}
       {% if max_features is defined %}--max_features {{ max_features }}{% endif %}
       {% if max_depth is defined %}--max_depth {{ max_depth }}{% endif %}
       {% if max_leaf_nodes is defined %}--max_leaf_nodes {{ max_leaf_nodes }}{% endif %}
@@ -71,14 +70,14 @@ jobs:
         options:
         # general parameters
         - inputFile
-        - outputFile
+        - outputBaseName
         - delimiter
         - idColumn
         - readHeader
         - molColumn
         - yColumn
-        # - nTopResults
-        # - refitBestModels
+        - nTopResults
+        - refitBestModels
         - scoring
         - n_jobs_search
         - cv
@@ -120,23 +119,30 @@ jobs:
       outputs:
         type: object
         properties:
-          outputFile:
-            title: Output file
+          resultsFile:
+            title: Search results (top parameter sets and their scores)
             mime-types:
-            - text/plain
-            creates: '{{ outputFile }}'
+            - application/json
+            creates: '{{ outputBaseName }}.json'
+            type: file
+          modelFile:
+            title: Best model, refitted on all the data (pickled)
+            mime-types:
+            - application/octet-stream
+            # not created when refitBestModels is false
+            creates: '{{ outputBaseName }}.jmodel'
             type: file
       options:
         type: object
         required:
-        - outputFile
+        - outputBaseName
         properties:
           # general parameters
-          outputFile:
-            title: Output file
+          outputBaseName:
+            title: Output file base name (.json and .jmodel are appended)
             type: string
             pattern: "^[A-Za-z0-9_/\\.\\-]+$"
-            default: best_model.jmodel
+            default: best_model
           delimiter:
             title: Delimiter for text formats
             type: string
@@ -148,31 +154,33 @@ jobs:
             - pipe
           idColumn:
             title: Column index for molecule ID (zero based index)
-            type: number
-            default: 1
+            type: integer
+            minimum: 0
+            default: 0
           readHeader:
             title: Read a header line with the field names when reading .smi or .txt
             type: boolean
             default: true
           molColumn:
             title: Column index for molecule when using .smi
-            type: number
-            default: 0
+            type: integer
+            minimum: 0
+            default: 1
           yColumn:
             title: Column index for the Y variable when using .smi
-            type: number
+            type: integer
+            minimum: 0
             default: 2
           # gridsearch parameters
-          # nTopResults:
-          #   title: Top n results
-          #   type: number
-          #   default: 1
-          #   description: >-
-          #     Report top n results in output file
-          # refitBestModels:
-          #   title: Include fitted models in output
-          #   type: boolean
-          #   default: true
+          nTopResults:
+            title: Number of top-ranked parameter sets to report
+            type: integer
+            minimum: 1
+            default: 1
+          refitBestModels:
+            title: Refit the best parameters on all the data and save the model
+            type: boolean
+            default: true
           scoring:
             title: Scoring
             type: string
@@ -187,14 +195,15 @@ jobs:
             #   See Specifying multiple metrics for evaluation for an example.
           n_jobs_search:
             title: N jobs search
-            type: string
+            type: integer
             # description: >-
             #   The number of jobs to run in parallel.
             #   None means 1 unless in a joblib.parallel_backend context. -1
             #   means using all processors.
           cv:
             title: CV
-            type: string
+            type: integer
+            minimum: 2
             # description: >-
             #   Determines the cross-validation splitting strategy.
             #   Possible inputs for are:
@@ -202,7 +211,8 @@ jobs:
             #   integer, to specify the number of folds in a (Stratified)KFold
           verbose_search:
             title: Verbose search
-            type: string
+            type: integer
+            minimum: 0
             # description: >-
             #   Verbosity of the search: the higher, the more messages
           pre_dispatch:
@@ -228,7 +238,8 @@ jobs:
             #   does not affect the refit step, which will always raise the error.
           return_train_score:
             title: Return train score
-            type: string
+            type: boolean
+            default: false
             # description: >-
             #   If False, the cv_results_ attribute will not include training scores.
             #   Computing training scores is used to get insights on how different
@@ -374,13 +385,14 @@ jobs:
             #   regressions trained on data with missing values.
           # randomforestregressor non-tunable parameters
           verbose_estimator:
-            title: Verbose estmator
-            type: number
+            title: Verbose estimator
+            type: integer
+            minimum: 0
             # description: >-
             #   Controls the verbosity when fitting and predicting
           n_jobs_estimator:
             title: N jobs estimator
-            type: string
+            type: integer
             # description: >-
             #   The number of jobs to run in parallel.
             #   fit, predict, decision_path and apply are all parallelized over the trees.
@@ -392,7 +404,7 @@ jobs:
         inputs:
           inputFile: data/caco2_mordred_filtered_scaled.smi
         options:
-          outputFile: best_model.jmodel
+          outputBaseName: best_model
           bootstrap: True,False
           ccp_alpha: 0.0,0.1,0.5
           # Six parameter combinations over 900 rows x 742 descriptors, with
@@ -406,6 +418,27 @@ jobs:
         checks:
           exitCode: 0
           outputs:
+          - name: best_model.json
+            checks:
+            - exists: true
           - name: best_model.jmodel
             checks:
             - exists: true
+      # Refitting off: the results are written, the model is not
+      no-refit:
+        inputs:
+          inputFile: data/caco2_mordred_filtered_scaled.smi
+        options:
+          outputBaseName: results/no_refit
+          n_estimators: 10
+          refitBestModels: false
+          readHeader: true
+        checks:
+          exitCode: 0
+          outputs:
+          - name: results/no_refit.json
+            checks:
+            - exists: true
+          - name: results/no_refit.jmodel
+            checks:
+            - exists: false
